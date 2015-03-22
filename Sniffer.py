@@ -1,12 +1,28 @@
 import pcapy
-from impacket.ImpactDecoder import EthDecoder
 import sys
 import struct as struct
 import socket 
+import dpkt
+import threading
+import atexit
+import Queue
 
-class Sniffer: 
+#Convert a string of 6 characters of ethernet address into a dash separated hex string
+def ethernetAddr ( addr) :
+    mac = "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x" % ( ord(addr[0]), ord(addr[1]), ord(addr[2]), ord(addr[3]), ord(addr[4]), ord(addr[5]) )
+    return mac
+
+class Sniffer(threading.Thread):
+    '''This is the class representing - as you can guess from its name - a sniffer, which 
+    based on destination hw addr moves packets to queues of threads representing honeypots''' 
     
-    def __init__(self):
+    def __init__(self, queue):
+        print "inserterd" 
+        
+        #ru in a new thread
+        threading.Thread.__init__(self)
+        
+        self.queue = queue
         
         devList = pcapy.findalldevs() # list of all avalible devices
         if len(sys.argv) < 2:
@@ -24,47 +40,75 @@ class Sniffer:
         read_timeout = 10  # in milliseconds, for more info see: http://www.tcpdump.org/pcap.htm
         self.packet_limit = -1  # infinite - sniff "forever"
         
+        atexit.register(self.onExit)
+        
         self.pc = pcapy.open_live(dev, max_bytes, promiscuous, read_timeout)        
         if self.pc.datalink() is not pcapy.DLT_EN10MB:
             print "Not appropriate ethernet header. See: http://www.tcpdump.org/linktypes.html"
         #TODO
 #         str = "(host 192.168.1.1 or localhost)"
 #         bpf = pcapy.compile(pcapy.DLT_EN10MB, max_bytes, str, 1, 1'''maska''')
-#         self.pc.setfilter(bpf)
+#         self.pc.setfilter(bpf)   
+    
+    
+    def onExit(self):
+        self.pc = None
         
-        # Actual sniffing
-        self.sniff()
-
-    
-    
     # callback for received packets
     # is called, when self.pc.loop recives packet and it process the packet
-    def recivedPackets(self, hdr, data):
-#         try:
-#             packet = EthDecoder().decode(data) -- resources consuming...
-#             print packet
-#         except Exception:
-#             print "Fail--------------\n"
-             
-        #parse ethernet header
-        eth_length = 14
-         
-        eth_header = data[:eth_length]
-        eth = struct.unpack('!6s6sH' , eth_header)
-        eth_protocol = socket.ntohs(eth[2])
-        print 'Destination MAC : ' + self.ethernetAddr(data[0:6]) + ' Source MAC : ' + self.ethernetAddr(data[6:12]) + ' Protocol : ' + str(eth_protocol)
-        
+    def recivedPackets(self, hdr, data): 
+        self.queue.put(data)          
+
     # capture packets
     def sniff(self):
         self.pc.loop(self.packet_limit, self.recivedPackets)
         
-        
-    #Convert a string of 6 characters of ethernet address into a dash separated hex string
-    def ethernetAddr (self, addr) :
-        mac = "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x" % ( ord(addr[0]) , ord(addr[1]) , ord(addr[2]), ord(addr[3]), ord(addr[4]) , ord(addr[5]) )
-        return mac
-            
     
-c = Sniffer()
+    def run(self):
+        # Actual sniffing
+        self.sniff()
         
-
+        
+        
+class Honeypot(threading.Thread):
+    def __init__(self, queue):
+        
+        threading.Thread.__init__(self)
+        
+        self.mac = ""
+        self.ip=""
+        self.packetQueue = queue
+        self.start()
+    
+    def run(self):
+        while True:
+            #if queue is empty, then it is blocked
+            packet = self.packetQueue.get()
+            self.parsePacket(packet)
+            self.packetQueue.task_done()
+    
+    def parsePacket(self, data):
+        #parse ethernet header
+        eth_length = 14
+          
+        eth_header = data[:eth_length]
+        eth = struct.unpack('!6s6sH' , eth_header)
+        eth_protocol = socket.ntohs(eth[2])
+        print 'Destination MAC : ' + ethernetAddr(data[0:6]) + ' Source MAC : ' + ethernetAddr(data[6:12]) + ' Protocol : ' + str(eth_protocol)
+        if eth_protocol == 8:
+            eth = dpkt.ethernet.Ethernet(data)
+            ip = eth.data
+            tcp = ip.data
+        
+        
+        
+class Main:
+    def __init__(self):
+        #TODO - multiple threads, each will have its own queue, sniffer will
+        #divide traffice based on the MAC addr
+        queue = Queue.Queue()
+        hpot = Honeypot(queue)
+        self.sniff = Sniffer(queue)
+        self.sniff.start()
+        
+Main()
