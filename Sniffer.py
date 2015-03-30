@@ -6,6 +6,7 @@ import dpkt
 import threading
 import atexit
 import Queue
+import dnet
 
 #Convert a string of 6 characters of ethernet address into a dash separated hex string
 def ethernetAddr ( addr) :
@@ -19,7 +20,7 @@ class Sniffer(threading.Thread):
     def __init__(self, queue):
         print "inserterd" 
         
-        #ru in a new thread
+        #run in a new thread
         threading.Thread.__init__(self)
         
         self.queue = queue
@@ -45,6 +46,7 @@ class Sniffer(threading.Thread):
         self.pc = pcapy.open_live(dev, max_bytes, promiscuous, read_timeout)        
         if self.pc.datalink() is not pcapy.DLT_EN10MB:
             print "Not appropriate ethernet header. See: http://www.tcpdump.org/linktypes.html"
+            return
         #TODO
 #         str = "(host 192.168.1.1 or localhost)"
 #         bpf = pcapy.compile(pcapy.DLT_EN10MB, max_bytes, str, 1, 1'''maska''')
@@ -77,10 +79,21 @@ class Honeypot(threading.Thread):
         
         self.mac = ""
         self.ip=""
+        #honeypots incoming packets
         self.packetQueue = queue
         self.start()
     
     def run(self):
+        #TODO ------ testing only-------------------------------
+        f = FileReader("conf.txt")
+        ip, mac = f.getIpMac()    
+        
+        arp = Arp(ip, mac)
+        snd = dnet.eth(sys.argv[1])
+        snd.send( str(arp.buildAnnouncment(ip, mac)) ) 
+        
+        # ------------------------------------------------------
+           
         while True:
             #if queue is empty, then it is blocked
             packet = self.packetQueue.get()
@@ -100,7 +113,59 @@ class Honeypot(threading.Thread):
             ip = eth.data
             tcp = ip.data
         
+
+            
+class FileReader:
+    '''TODO file format...'''
+    def __init__(self, ff):
+        self.f = ff
+        self.ip = ''
+        self.mac = ''
+        self.readF(self.f)
         
+        
+    def readF(self, ff):
+        f = open(ff, 'r')
+        for line in f:
+            if line[0] == "#":
+                continue
+            spl = line.split()
+            self.ip = spl[0]
+            self.mac = spl[1]
+    
+    
+    def getIpMac(self):
+        return self.ip, self.mac
+    
+class Arp:
+    
+    #TODO - REQUEST, REPLY
+    def __init__(self, ip , mac):
+        pass
+    
+    
+    def buildAnnouncment(self, ip, mac):
+        '''Gratuitous ARP'''
+        
+        arp = dpkt.arp.ARP()
+        #The source hardware address
+        arp.sha = dnet.eth_aton(mac)
+        #The source protocol address
+        arp.spa = dnet.ip_aton(ip)
+        #The target hardware address
+        arp.tha = '0'
+        #The target protocol address
+        arp.tpa = dnet.ip_aton(ip)
+        arp.op = dpkt.arp.ARP_OP_REQUEST
+        
+        packet = dpkt.ethernet.Ethernet()
+        packet.src = dnet.eth_aton(mac)
+        packet.dst = dnet.eth_aton("FF:FF:FF:FF:FF:FF")
+        packet.data = arp
+        packet.type = dpkt.ethernet.ETH_TYPE_ARP
+            
+        return packet
+    
         
 class Main:
     def __init__(self):
