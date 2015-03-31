@@ -6,7 +6,7 @@ import dpkt
 import threading
 import atexit
 import Queue
-import dnet
+import dumbnet
 
 #Convert a string of 6 characters of ethernet address into a dash separated hex string
 def ethernetAddr ( addr) :
@@ -89,8 +89,8 @@ class Honeypot(threading.Thread):
         ip, mac = f.getIpMac()    
         
         arp = Arp(ip, mac)
-        snd = dnet.eth(sys.argv[1])
-        snd.send( str(arp.buildAnnouncment(ip, mac)) ) 
+        snd = dumbnet.eth(sys.argv[1])
+        snd.send( str(arp.buildAnnouncment()) ) 
         
         # ------------------------------------------------------
            
@@ -127,7 +127,7 @@ class FileReader:
     def readF(self, ff):
         f = open(ff, 'r')
         for line in f:
-            if line[0] == "#":
+            if line[0] == "#" or not line:
                 continue
             spl = line.split()
             self.ip = spl[0]
@@ -141,31 +141,61 @@ class Arp:
     
     #TODO - REQUEST, REPLY
     def __init__(self, ip , mac):
+        self.ip = ip
+        self.mac = mac
         pass
     
     
-    def buildAnnouncment(self, ip, mac):
-        '''Gratuitous ARP'''
+    def buildAnnouncment(self):
+        '''Gratuitous ARP
+        A host sends an ARP request for
+        its own    IP address'''
         
         arp = dpkt.arp.ARP()
         #The source hardware address
-        arp.sha = dnet.eth_aton(mac)
+        arp.sha = dumbnet.eth_aton(self.mac)
         #The source protocol address
-        arp.spa = dnet.ip_aton(ip)
+        arp.spa = dumbnet.ip_aton(self.ip)
         #The target hardware address
         arp.tha = '0'
         #The target protocol address
-        arp.tpa = dnet.ip_aton(ip)
+        arp.tpa = dumbnet.ip_aton(self.ip)
         arp.op = dpkt.arp.ARP_OP_REQUEST
         
         packet = dpkt.ethernet.Ethernet()
-        packet.src = dnet.eth_aton(mac)
-        packet.dst = dnet.eth_aton("FF:FF:FF:FF:FF:FF")
+        packet.src = dumbnet.eth_aton(self.mac)
+        packet.dst = dumbnet.eth_aton("FF:FF:FF:FF:FF:FF")
         packet.data = arp
         packet.type = dpkt.ethernet.ETH_TYPE_ARP
             
         return packet
     
+
+    def builReply(self, destMac, destIp):
+        '''arp reply packet
+        reply to Arp request'''
+        
+        arp = dpkt.arp.ARP()
+        #The source hardware address
+        arp.sha = dumbnet.eth_aton(self.mac)
+        #The source protocol address
+        arp.spa = dumbnet.ip_aton(self.ip)
+        #The target hardware address
+        arp.tha = dumbnet.eth_aton(destMac)
+        #The target protocol address
+        arp.tpa = dumbnet.ip_aton(destIp)
+        arp.op = dpkt.arp.ARP_OP_REPLY
+        
+        packet = dpkt.ethernet.Ethernet()
+        packet.src = dumbnet.eth_aton(self.mac)
+        packet.dst = dumbnet.eth_aton(destMac)
+        packet.data = arp
+        packet.type = dpkt.ethernet.ETH_TYPE_ARP
+            
+        return packet
+
+    def refreshArpCache(self):
+        pass        
         
 class Main:
     def __init__(self):
