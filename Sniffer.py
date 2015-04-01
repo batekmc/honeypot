@@ -196,7 +196,19 @@ class Arp:
 
     def refreshArpCache(self):
         pass        
-        
+
+class ICMP:
+
+    def __init__(self):
+        pass
+
+    def build echoReply(self, request):
+        request.code = icmp.ICMP_ECHOREPLY
+        pass
+
+    def build echoRequest(self):
+        pass
+
 class Main:
     def __init__(self):
         #TODO - multiple threads, each will have its own queue, sniffer will
