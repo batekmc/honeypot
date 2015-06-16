@@ -2,6 +2,7 @@ import pcapy
 import sys
 import threading
 import atexit
+import DataSingelton as ds
 
 class Sniffer(threading.Thread):
     '''This is the class representing a sniffer, which 
@@ -14,18 +15,7 @@ class Sniffer(threading.Thread):
         threading.Thread.__init__(self)
         
         self.queue = queue
-        
-        devList = pcapy.findalldevs() # list of all avalible devices
-        if len(sys.argv) < 2:
-            print "Please select device to listen on"
-            print "Here is the list of acceptable devices: ", devList
-            return
-        dev = sys.argv[1]
-        if dev not in devList:
-            print "Selected device: " + dev + " is not acceptable." 
-            print "Here Is list of acceptable devices: ", devList
-            return
-            
+        dev = ds.globalData.dev          
         max_bytes = 65536   # maximum number of bytes to be captured by pcap
         promiscuous = True # set Promiscous mode on 
         read_timeout = 10  # in milliseconds, for more info see: http://www.tcpdump.org/pcap.htm

@@ -2,8 +2,7 @@ import threading
 import struct
 import socket
 import dpkt
-import FileParser as fp
-import Arp
+import Arp 
 import dumbnet
 import sys
 import HelpFunctions as hp
@@ -21,15 +20,6 @@ class Honeypot(threading.Thread):
         self.start()
     
     def run(self):
-        #TODO ------ testing only-------------------------------
-        f = fp.FileReader("conf.txt")
-        ip, mac = f.getIpMac()    
-        
-        arp = Arp(ip, mac)
-        snd = dumbnet.eth(sys.argv[1])
-        snd.send( str(arp.buildAnnouncment()) ) 
-        
-        # ------------------------------------------------------
            
         while True:
             #if queue is empty, then it is blocked

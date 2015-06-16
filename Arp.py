@@ -1,40 +1,16 @@
 import dumbnet
 import dpkt
+import os
+import DataSingelton as ds
 
 
 class Arp:
     
     #TODO - REQUEST, REPLY
-    def __init__(self, ip , mac):
+    def __init__(self, ip=0 , mac=0):
         self.ip = ip
         self.mac = mac
-        pass
-    
-    
-    def buildAnnouncment(self):
-        '''Gratuitous ARP
-        A host sends an ARP request for
-        its own    IP address'''
-        
-        arp = dpkt.arp.ARP()
-        #The source hardware address
-        arp.sha = dumbnet.eth_aton(self.mac)
-        #The source protocol address
-        arp.spa = dumbnet.ip_aton(self.ip)
-        #The target hardware address
-        arp.tha = '0'
-        #The target protocol address
-        arp.tpa = dumbnet.ip_aton(self.ip)
-        arp.op = dpkt.arp.ARP_OP_REQUEST
-        
-        packet = dpkt.ethernet.Ethernet()
-        packet.src = dumbnet.eth_aton(self.mac)
-        packet.dst = dumbnet.eth_aton("FF:FF:FF:FF:FF:FF")
-        packet.data = arp
-        packet.type = dpkt.ethernet.ETH_TYPE_ARP
-            
-        return packet
-    
+        pass   
 
     def builReply(self, destMac, destIp):
         '''arp reply packet
@@ -58,6 +34,18 @@ class Arp:
         packet.type = dpkt.ethernet.ETH_TYPE_ARP
             
         return packet
+    
+    def updateArpCache(self, listOfAddresses):
+        ''' lisOfAddresses is a list with addresses,
+         which will be used for virtual hosts'''
+        
+        command = "sudo arp -s "
+        mac = ds.globalData.mac
+        
+        #arp -s ip mac
+        for addr in listOfAddresses:
+            ret = os.popen(command + addr + " " + mac)
+            print ret
+            
 
-    def refreshArpCache(self):
-        pass        
+        

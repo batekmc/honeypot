@@ -1,20 +1,20 @@
-class FileReader:
+import HpotData
+
+class FileParser:
     '''TODO file format...'''
     def __init__(self, ff):
-        self.f = ff
-        self.ip = ''
-        self.mac = ''
-        self.readF(self.f)
+        self.f = ff      
         
-        
-    def readF(self, ff):
-        f = open(ff, 'r')
+    def readF(self):
+        f = open(self.f, 'r')
+        retArr = []
         for line in f:
             if line[0] == "#" or not line:
                 continue
             spl = line.split()
-            self.ip = spl[0]
-            self.mac = spl[1]
+            retArr.append(HpotData.HpotData(spl[0], spl[1]))
+
+        return retArr
     
     
     def getIpMac(self):
