@@ -1,5 +1,4 @@
 import pcapy
-import sys
 import threading
 import atexit
 import DataSingelton as ds
@@ -8,8 +7,9 @@ class Sniffer(threading.Thread):
     '''This is the class representing a sniffer, which 
     based on destination hw addr moves packets to queues of threads representing honeypots''' 
     
-    def __init__(self, queue):
-        print "inserterd" 
+    def __init__(self, queue, filterP):
+        '''args - @queue:queues for virtual system, @filter: filtec
+        only ipaddresses of virtual systems'''
         
         #run in a new thread
         threading.Thread.__init__(self)
@@ -27,10 +27,8 @@ class Sniffer(threading.Thread):
         if self.pc.datalink() is not pcapy.DLT_EN10MB:
             print "Not appropriate ethernet header. See: http://www.tcpdump.org/linktypes.html"
             return
-        #TODO
-#         str = "(host 192.168.1.1 or localhost)"
-#         bpf = pcapy.compile(pcapy.DLT_EN10MB, max_bytes, str, 1, 1'''maska''')
-#         self.pc.setfilter(bpf)   
+        self.pc.setfilter(filterP)
+        print "Sniffer init OK"   
     
     
     def onExit(self):
