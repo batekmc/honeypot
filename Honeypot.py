@@ -3,7 +3,6 @@ import struct
 import socket
 import dpkt
 import HelpFunctions as hp
-
 import dumbnet
 import DataSingelton as ds
 
@@ -18,17 +17,18 @@ class Honeypot(threading.Thread):
         #honeypots incoming packets
         self.packetQueue = queue
         self.start()
+        
+        self.counter = 1
     
     def run(self):
            
         while True:
             #if queue is empty, then it is blocked
-            packet = self.packetQueue.get()
+            packet = self.packetQueue.get(block=True,timeout=None)
             self.parsePacket(packet)
             self.packetQueue.task_done()
     
     def parsePacket(self, data):
-        print "OK"
         #parse ethernet header
         eth_length = 14
           
@@ -37,7 +37,8 @@ class Honeypot(threading.Thread):
         eth_protocol = socket.ntohs(eth[2])
         print 'Destination MAC : ' + hp.ethernetAddr(data[0:6]) + ' Source MAC : ' + hp.ethernetAddr(data[6:12]) + ' Protocol : ' + str(eth_protocol)
         
-        if eth_protocol == dpkt.ethernet.ETH_TYPE_IP:
+        #if eth_protocol == dpkt.ethernet.ETH_TYPE_IP:
+        if eth_protocol == 8:
             eth = dpkt.ethernet.Ethernet(data)
             ip = eth.data
             tcp = ip.data
@@ -45,18 +46,20 @@ class Honeypot(threading.Thread):
             #ip.p is protocol number -
             #http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
             if ipPacket.p == dpkt.ip.IP_PROTO_ICMP:
-                print "OK"
-                icmp = dpkt.icmp.ICMP(tcp)
+                icmp = dpkt.icmp.ICMP(str(tcp.data))
                 icmp.code = dpkt.icmp.ICMP_ECHOREPLY
                 ipPacket.data = icmp
                 tmp = ipPacket.src
                 ipPacket.src = ipPacket.dst
                 ipPacket.dst = tmp
+                ipPacket.ttl -= 1
                 tmp = eth.dst
                 eth.dst = eth.src
                 eth.src = tmp
                 snd = dumbnet.eth(ds.globalData.dev)
                 snd.send(str(eth))
+                
+                
                 
                 
                 

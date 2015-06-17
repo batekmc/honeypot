@@ -28,7 +28,7 @@ class Sniffer(threading.Thread):
             print "Not appropriate ethernet header. See: http://www.tcpdump.org/linktypes.html"
             return
         self.pc.setfilter(filterP)
-        print "Sniffer init OK"   
+        print filterP
     
     
     def onExit(self):

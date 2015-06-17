@@ -42,10 +42,15 @@ class Arp:
         command = "sudo arp -s "
         mac = ds.globalData.mac
         
+        com2 = "sudo arping -U -I " + ds.globalData.dev + " "#not working on some hosts...
+        
         #arp -s ip mac
         for addr in listOfAddresses:
+            ret = os.popen(com2 + addr)
+            print ret
             ret = os.popen(command + addr + " " + mac)
             print ret
+            
             
 
         

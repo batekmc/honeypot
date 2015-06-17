@@ -38,8 +38,6 @@ class Main:
         hpot = hp.Honeypot(queue)
         #create packtet filter
         filter = self.generateFilter(ipList)
-        print filter
-        return
         #start giving packets to queue
         self.sniff = sn.Sniffer(queue, filter)
         self.sniff.start()
@@ -74,18 +72,18 @@ class Main:
             print ret
             
     def generateFilter(self, ipList):
+        '''"host 192.168.1.222 or 192.168.1.1"'''
         nebo=" or "
-        ipA="ip.addr ==  "
         N=len(ipList)
         if N == 0:
             return None
-        filterP=""
+        filterP="host "
         
         for i in range(N):
             if i == N-1:
                 break
-            filterP+= ipA + ipList[i] + nebo
-        filterP+=ipA + ipList[N-1]
+            filterP+= ipList[i] + nebo
+        filterP+=ipList[N-1]
         return filterP
         
       
