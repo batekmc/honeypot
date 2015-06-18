@@ -59,6 +59,9 @@ class Honeypot(threading.Thread):
                 eth.src = tmp
                 snd = dumbnet.eth(ds.globalData.dev)
                 snd.send(str(eth))
+#         elif eth_protocol == 1544:
+#             eth_protocol = socket.ntohs(eth[2]) + 
+#             print "ARPP-----------"
                 
                 
                 

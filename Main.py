@@ -27,9 +27,9 @@ class Main:
         data = f.readF()
         #get list of ip addresses only
         ipList, macList = self.getIPandMACLists(data)
-        arp = Arp.Arp()
+        #arp = Arp.Arp()
         #update system arp cache //TODO refresh interval
-        arp.updateArpCache(ipList)
+        #arp.updateArpCache(ipList)
         #update system firewall 
         ipTab=hf.ipTableScriptGenerator(ipList)
         self.updateIPTables(ipTab)
