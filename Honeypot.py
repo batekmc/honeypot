@@ -12,11 +12,12 @@ class Honeypot(threading.Thread):
         
         threading.Thread.__init__(self)
         
+        #self.daemon = True -- TODO
+        
         self.mac = ""
         self.ip=""
         #honeypots incoming packets
         self.packetQueue = queue
-        self.start()
         
         self.counter = 1
     

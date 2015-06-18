@@ -2,15 +2,19 @@ import dumbnet
 import dpkt
 import os
 import DataSingelton as ds
+import threading
 
 
-class Arp:
+class Arp(threading.Thread):
     
     #TODO - REQUEST, REPLY
-    def __init__(self, ip=0 , mac=0):
-        self.ip = ip
-        self.mac = mac
-        pass   
+    def __init__(self, ipList=None, macList=None):
+        
+        if ipList is None or macList is None or len(ipList) != len(macList):
+            raise Exception("missing ip or mac address")
+        
+        self.ipList = ipList
+        self.macList = macList  
 
     def builReply(self, destMac, destIp):
         '''arp reply packet
@@ -35,7 +39,7 @@ class Arp:
             
         return packet
     
-    def updateArpCache(self, listOfAddresses):
+    def updateArpCache(self):
         ''' lisOfAddresses is a list with addresses,
          which will be used for virtual hosts'''
         
@@ -45,7 +49,7 @@ class Arp:
         com2 = "sudo arping -U -I " + ds.globalData.dev + " "#not working on some hosts...
         
         #arp -s ip mac
-        for addr in listOfAddresses:
+        for addr in self.ipList:
             ret = os.popen(com2 + addr)
             print ret
             ret = os.popen(command + addr + " " + mac)
