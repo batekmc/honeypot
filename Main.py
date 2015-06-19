@@ -24,24 +24,32 @@ class Main:
         #read conf file
         f = fp.FileParser("conf.txt")
         #get list of HpotData objects
-        data = f.readF()
+        hpotData = f.readF()
         #get list of ip addresses only
-        ipList, macList = self.getIPandMACLists(data)
-        #arp = Arp.Arp()
-        #update system arp cache //TODO refresh interval
-        #arp.updateArpCache(ipList)
+        ipList, macList = self.getIPandMACLists(hpotData)
+                
+        #run arp daemon:)
+        arpQ = Queue.Queue()
+        arp = Arp.Arp(ipList, macList, arpQ)
+        arp.start()
+                
         #update system firewall 
         ipTab=hf.ipTableScriptGenerator(ipList)
         self.updateIPTables(ipTab)
                         
-        #queue for virtual system //TODO multiple systems
-        queue = Queue.Queue()
-        hpot = hp.Honeypot(queue)
-        hpot.start()
+        #queue for virtual system
+        queueR = []
+        queueR.append(Queue.Queue())
+        #honeypot objects
+        hpot = []
+        hpot.append(hp.Honeypot(queueR[0]))
+        
+        for h in hpot:
+            h.start()
         #create packtet filter
         filter = self.generateFilter(ipList)
         #start giving packets to queue
-        self.sniff = sn.Sniffer(queue, filter)
+        self.sniff = sn.Sniffer(queueR, arpQ, ipList, macList, filter)
         self.sniff.start()
         
         #stupid workaround to kill all threads...

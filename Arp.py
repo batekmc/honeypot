@@ -3,18 +3,39 @@ import dpkt
 import os
 import DataSingelton as ds
 import threading
+import HelpFunctions as hf
 
 
 class Arp(threading.Thread):
     
     #TODO - REQUEST, REPLY
-    def __init__(self, ipList=None, macList=None):
+    def __init__(self, ipList, macList, arpQ):
+        
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.queue = arpQ     
         
         if ipList is None or macList is None or len(ipList) != len(macList):
             raise Exception("missing ip or mac address")
         
         self.ipList = ipList
-        self.macList = macList  
+        self.macList = macList
+        
+        self.updateArpCache()
+    
+    def run(self):
+        self.arpLoop()
+        
+    def arpLoop(self):
+        while True:
+            packet = self.queue.get(block=True,timeout=None)
+            self.proccessPacket(packet)
+    
+    
+    def proccessPacket(self, packet):
+        print "ARP!"
+        arp = dpkt.arp.ARP(packet)
+        print hf.ethernetAddr(arp.sha)
 
     def builReply(self, destMac, destIp):
         '''arp reply packet

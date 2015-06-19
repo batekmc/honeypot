@@ -2,20 +2,27 @@ import pcapy
 import threading
 import atexit
 import DataSingelton as ds
+import Dispatcher as dp
 
 class Sniffer(threading.Thread):
     '''This is the class representing a sniffer, which 
     based on destination hw addr moves packets to queues of threads representing honeypots''' 
     
-    def __init__(self, queue, filterP):
+    def __init__(self, queueR, arpQ, ipList, macList, filterP):
         '''args - @queue:queues for virtual system, @filter: filtec
         only ipaddresses of virtual systems'''
         
         #run in a new thread
         threading.Thread.__init__(self)
-                
-        self.queue = queue
-        dev = ds.globalData.dev          
+        
+        #create dispatcher
+        dispatcher = dp.Dispatcher(queueR, arpQ, ipList, macList)
+        dispatcher.start()
+        #move traffic to dispatcher               
+        self.queue = dispatcher.getQueue()
+        
+        
+        dev = ds.globalData.dev #device entered by user          
         max_bytes = 65536   # maximum number of bytes to be captured by pcap
         promiscuous = True # set promiscuous mode on 
         read_timeout = 10  # in milliseconds, for more info see: http://www.tcpdump.org/pcap.htm

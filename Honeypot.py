@@ -30,6 +30,8 @@ class Honeypot(threading.Thread):
             self.packetQueue.task_done()
     
     def parsePacket(self, data):
+        print "honeypot"
+        return
         #parse ethernet header
         eth_length = 14
           

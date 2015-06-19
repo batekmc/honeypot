@@ -38,6 +38,10 @@ class Dispatcher(threading.Thread):
             eth = struct.unpack('!6s6sH' , ethHeader)
             protocol = socket.ntohs(eth[2])
             
+            
+            print "protokol: " + str(protocol)  
+            
+            
             #1544 stands for ARP - should be 0x0806...
             #something is wrong:)
             if protocol == 1544:
@@ -46,15 +50,26 @@ class Dispatcher(threading.Thread):
             elif protocol == 8:
                 #split traffic based on MAC
                 mac = hf.ethernetAddr(packet[0:6])
-                index = self.macList.index(mac)
-                ethernetObject = dpkt.ethernet.Ethernet(packet)
-                #each honeypot will process traffic on its own
-                self.hpotsQ[index].put(ethernetObject)
+                try:
+                    index = self.macList.index(mac)
+                    ethernetObject = dpkt.ethernet.Ethernet(packet)
+                    #each honeypot will process traffic on its own
+                    self.hpotsQ[index].put(ethernetObject)
+                except ValueError:
+                    print "fail! MAC: " + str(mac)
             #might add ipv6 support, or some other protocols using ethernet,
             #Just by using protocol number and then put it to the queue + modify sniffer filter.
                  
     
     #return pointer to own queue - for sniffer
-    def getQue(self):
+    def getQueue(self):
         return self.fifo
+    
+    def run(self):
+        self.dispatch()
+        
+        
+        
+        
+        
         
