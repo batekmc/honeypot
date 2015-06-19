@@ -38,15 +38,11 @@ class Dispatcher(threading.Thread):
             eth = struct.unpack('!6s6sH' , ethHeader)
             protocol = socket.ntohs(eth[2])
             
-            
-            print "protokol: " + str(protocol)  
-            
-            
             #1544 stands for ARP - should be 0x0806...
             #something is wrong:)
             if protocol == 1544:
                 self.arpQ.put(packet)
-            #ipv4 protocol, also should be 0x0800..
+            #ipv4 protocol, also should be 0x0800...
             elif protocol == 8:
                 #split traffic based on MAC
                 mac = hf.ethernetAddr(packet[0:6])

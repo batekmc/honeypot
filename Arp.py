@@ -22,7 +22,7 @@ class Arp(threading.Thread):
         
         self.snd = Sender.send.getSQueue()
         
-        #IMPORTANT - ARP has to start sender, becaue it needs to know abaut user input -
+        #IMPORTANT - ARP has to start sender, because it needs to know about user input -
         #device to open, so it starts sending packets at this point.
         Sender.send.start()
 

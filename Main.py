@@ -91,12 +91,12 @@ class Main:
             print ret
             
     def generateFilter(self, ipList):
-        '''"host 192.168.1.222 or 192.168.1.1"'''
+        '''"dst 192.168.1.222 or 192.168.1.1"'''
         nebo=" or "
         N=len(ipList)
         if N == 0:
             return None
-        filterP="ether host FF:FF:FF:FF:FF:FF or host "
+        filterP="ether dst FF:FF:FF:FF:FF:FF or dst "
         
         for i in range(N):
             if i == N-1:

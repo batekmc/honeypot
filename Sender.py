@@ -20,7 +20,7 @@ class Sender(threading.Thread):
         while True:
             packet = self.sQueue.get(block=True, timeout=None)
             bytesSended = self.snd.send(str(packet))
-            print "Sended bytes: " + bytesSended
+            print "Sended bytes: " + str(bytesSended)
     
     def getSQueue(self):
         return self.sQueue

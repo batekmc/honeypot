@@ -1,10 +1,6 @@
 import threading
-import struct
-import socket
 import dpkt
-import HelpFunctions as hp
-import dumbnet
-import DataSingelton as ds
+import Sender 
 
 
 class Honeypot(threading.Thread):
@@ -20,6 +16,9 @@ class Honeypot(threading.Thread):
         self.packetQueue = queue
         
         self.counter = 1
+        
+        #outgoing queue
+        self.snd = Sender.send.getSQueue()
     
     def run(self):
            
@@ -27,43 +26,32 @@ class Honeypot(threading.Thread):
             #if queue is empty, then it is blocked
             packet = self.packetQueue.get(block=True,timeout=None)
             self.parsePacket(packet)
-            self.packetQueue.task_done()
     
-    def parsePacket(self, data):
-        print "honeypot"
-        return
-        #parse ethernet header
-        eth_length = 14
-          
-        eth_header = data[:eth_length]
-        eth = struct.unpack('!6s6sH' , eth_header)
-        eth_protocol = socket.ntohs(eth[2])
-        print 'Destination MAC : ' + hp.ethernetAddr(data[0:6]) + ' Source MAC : ' + hp.ethernetAddr(data[6:12]) + ' Protocol : ' + str(eth_protocol)
+    def parsePacket(self, eth):
+        '''receives dpkt.ethernet Object!'''
+        print "Honeypot"
+        ip = eth.data
+        tcp = ip.data
+        ipPacket = dpkt.ip.IP(str(ip))
+        #ip.p is protocol number -
+        #http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
         
-        #if eth_protocol == dpkt.ethernet.ETH_TYPE_IP:
-        if eth_protocol == 8:
-            eth = dpkt.ethernet.Ethernet(data)
-            ip = eth.data
-            tcp = ip.data
-            ipPacket = dpkt.ip.IP(str(ip))
-            #ip.p is protocol number -
-            #http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
-            if ipPacket.p == dpkt.ip.IP_PROTO_ICMP:
-                icmp = dpkt.icmp.ICMP(str(tcp.data))
-                icmp.code = dpkt.icmp.ICMP_ECHOREPLY
-                ipPacket.data = icmp
-                tmp = ipPacket.src
-                ipPacket.src = ipPacket.dst
-                ipPacket.dst = tmp
-                ipPacket.ttl -= 1
-                tmp = eth.dst
-                eth.dst = eth.src
-                eth.src = tmp
-                snd = dumbnet.eth(ds.globalData.dev)
-                snd.send(str(eth))
-#         elif eth_protocol == 1544:
-#             eth_protocol = socket.ntohs(eth[2]) + 
-#             print "ARPP-----------"
+        #EVERY HPOT answers to ping, might add switch to conf file
+        if ipPacket.p == dpkt.ip.IP_PROTO_ICMP:
+            ipPacket.icmp.type = dpkt.icmp.ICMP_ECHOREPLY
+            tmp = ipPacket.src
+            ipPacket.src = ipPacket.dst
+            ipPacket.dst = tmp
+            ipPacket.ttl -= 1
+            #MUST be set to zero, to find out that should calculate new...
+            #The fucking time took me to find out this bullshit!
+            ipPacket.sum = 0
+            tmp = eth.dst
+            eth.dst = eth.src
+            eth.src = tmp
+            eth.data = ipPacket
+            self.snd.put(eth)
+            
                 
                 
                 
