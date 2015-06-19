@@ -9,11 +9,8 @@ class Sender(threading.Thread):
     def __init__(self):
         
         threading.Thread.__init__(self)
-        #self.daemon = True  -- TODO
+        self.daemon = True
         
-        dev = ds.globalData.dev
-        #open L2 interface for sending
-        self.snd = dumbnet.eth(dev)
         #FIFO memory for sending
         self.sQueue = Queue.Queue()
         
@@ -29,10 +26,12 @@ class Sender(threading.Thread):
         return self.sQueue
     
     def run(self):
+        dev = ds.globalData.dev
+        #open L2 interface for sending
+        self.snd = dumbnet.eth(dev)
         self.sendingLoop()
         
 #Singleton
 send = Sender()
-send.start()
         
         

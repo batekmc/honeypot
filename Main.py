@@ -17,7 +17,7 @@ class Main:
         #TODO - multiple threads, each will have its own queue, sniffer will
         #divide traffic based on the MAC addr
         
-        #test, if given interface and 
+        #test input
         if not self.loadAndVerify():
             return
         
