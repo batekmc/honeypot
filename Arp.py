@@ -4,6 +4,7 @@ import os
 import DataSingelton as ds
 import threading
 import Sender 
+import Log
 
 class Arp(threading.Thread):
     
@@ -21,6 +22,10 @@ class Arp(threading.Thread):
         self.macList = macList
         
         self.snd = Sender.send.getSQueue()
+        
+        self.log = Log.log.getWQueue()  
+        
+        self.updateArpCache()
         
         #IMPORTANT - ARP has to start sender, because it needs to know about user input -
         #device to open, so it starts sending packets at this point.
@@ -77,11 +82,15 @@ class Arp(threading.Thread):
         arp.op = dpkt.arp.ARP_OP_REPLY
         
         packet = dpkt.ethernet.Ethernet()
-        packet.src = dumbnet.eth_aton(mac)
+        #Routers sometimes ignores replies from different hosts,
+        #but on the non csma/ca network it should work
+        packet.src = dumbnet.eth_aton(ds.globalData.mac)
         packet.dst = destMac
         packet.data = arp
         packet.type = dpkt.ethernet.ETH_TYPE_ARP
-            
+        
+        self.log.put("ARP-REPLY#" + "dstMAC:" + dumbnet.eth_ntoa(destMac) + ";dstIP:" +
+                     dumbnet.ip_ntoa(destIp) + ";sourceIP:" + ip + ";sourceMAC:" + mac +"\n")
         return packet
     
     def updateArpCache(self):
@@ -93,14 +102,12 @@ class Arp(threading.Thread):
         command = "sudo arp -s "
         mac = ds.globalData.mac
         
-#         com2 = "sudo arping -U -I " + "AA:BB:CC:DD:EE:FF" + " "#not working on some hosts...
+        com2 = "sudo arping -U -I " 
         
         #arp -s ip mac
-        for addr in self.ipList:
-#             ret = os.popen(com2 + addr)
-#             print ret
-            ret = os.popen(command + addr + " " + "AA:BB:CC:DD:EE:FF")
-            print ret
+        for i in range(len(self.ipList)):
+            ret = os.popen(com2 + self.ipList[i] + " " + self.macList[i])
+            ret = os.popen(command + self.ipList[i] + " " + self.macList[i])
             
             
 

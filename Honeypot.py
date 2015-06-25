@@ -39,12 +39,12 @@ class Honeypot(threading.Thread):
         #EVERY HPOT answers to ping, might add switch to conf file
         if ipPacket.p == dpkt.ip.IP_PROTO_ICMP:
             ipPacket.icmp.type = dpkt.icmp.ICMP_ECHOREPLY
+            ipPacket.icmp.sum = 0
             tmp = ipPacket.src
             ipPacket.src = ipPacket.dst
             ipPacket.dst = tmp
             ipPacket.ttl -= 1
-            #MUST be set to zero, to find out that should calculate new...
-            #The fucking time took me to find out this bullshit!
+            #MUST be set to zero, to find out that should calculate new
             ipPacket.sum = 0
             tmp = eth.dst
             eth.dst = eth.src
