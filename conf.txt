@@ -1,2 +1,13 @@
 #komentar nebo co
-192.168.1.223 92:fe:25:ed:0e:08
+honeypot
+ip 192.168.1.211
+mac 92:fe:25:ed:0e:08
+icmp on
+
+#comment
+
+honeypot
+#comment
+ip 192.168.1.222
+mac 88:fe:25:ed:0e:08
+icmp on

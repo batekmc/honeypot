@@ -8,7 +8,7 @@ class Honeypot(threading.Thread):
         
         threading.Thread.__init__(self)
         
-        #self.daemon = True -- TODO
+        self.daemon = True
         
         self.mac = ""
         self.ip=""
@@ -29,7 +29,6 @@ class Honeypot(threading.Thread):
     
     def parsePacket(self, eth):
         '''receives dpkt.ethernet Object!'''
-        print "Honeypot"
         ip = eth.data
         tcp = ip.data
         ipPacket = dpkt.ip.IP(str(ip))

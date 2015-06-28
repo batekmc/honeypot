@@ -1,5 +1,6 @@
 import threading
 import Queue
+from datetime import datetime
 
 
 class Log(threading.Thread):
@@ -17,6 +18,7 @@ class Log(threading.Thread):
         
         self.file = open(self.fileName, 'w')
         
+        
         self.queue = Queue.Queue()
         
         #Log starts itself, because it is singleton class
@@ -25,7 +27,7 @@ class Log(threading.Thread):
         
         while True:
             line= self.queue.get(block=True, timeout=None)
-            self.file.write(line)
+            self.file.write("[" + str(datetime.now()) + "]" + line)
             self.file.flush()
     
     def getWQueue(self):

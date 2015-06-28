@@ -28,7 +28,7 @@ class Main:
         #get list of ip addresses only
         ipList, macList = self.getIPandMACLists(hpotData)
                 
-        #run arp daemon:)
+        #run arp daemon
         arpQ = Queue.Queue()
         arp = Arp.Arp(ipList, macList, arpQ)
         arp.start()
@@ -39,10 +39,11 @@ class Main:
                         
         #queue for virtual system
         queueR = []
-        queueR.append(Queue.Queue())
         #honeypot objects
         hpot = []
-        hpot.append(hp.Honeypot(queueR[0]))
+        for i in range(len(hpotData)):
+            queueR.append(Queue.Queue())
+            hpot.append(hp.Honeypot(queueR[i]))
         
         for h in hpot:
             h.start()
@@ -91,8 +92,8 @@ class Main:
             print ret
             
     def generateFilter(self, ipList):
-        '''"dst 192.168.1.222 or 192.168.1.1"'''
-        nebo=" or "
+        '''"dst 192.168.1.222 or dst 192.168.1.1"'''
+        nebo=" or dst "
         N=len(ipList)
         if N == 0:
             return None
