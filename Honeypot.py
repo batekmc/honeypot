@@ -53,55 +53,82 @@ class Honeypot(threading.Thread):
         ipPacket = dpkt.ip.IP(str(ip))
         #ip.p is protocol number -
         #http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
-        
-        #HPOT answer to ping, based on conf file
+        destIP = dumbnet.ip_ntoa(ipPacket.src)
+        #ICMP
         if ipPacket.p == dpkt.ip.IP_PROTO_ICMP and self.icmp:
             ipPacket.icmp.type = dpkt.icmp.ICMP_ECHOREPLY
             ipPacket.icmp.sum = 0
-            tmp = ipPacket.src
-            ipPacket.src = ipPacket.dst
-            ipPacket.dst = tmp
-            ipPacket.ttl -= 1
-            #MUST be set to zero, to find out that should calculate new
-            ipPacket.sum = 0
-            destIP = dumbnet.ip_ntoa(ipPacket.dst)
-            self.sendEthPacket(eth, ipPacket, destIP)
+            self.sendEthFrame(eth, ipPacket, destIP)
             self.log.put("ICMP-ECHOREPLY#" +"dstIP:" + destIP + ";srcIP:" + self.ip )
             
-        
+        #TCP
         if ipPacket.p == dpkt.ip.IP_PROTO_TCP and self.tcp:
+            #0x014 - 
+            if ipPacket.tcp.flags == dpkt.tcp.TH_RST or ipPacket.tcp.flags == 0x014:
+                return
+            #RST Packet - closed
+            if 1 == 2:
+                tmp = ipPacket.tcp.sport
+                ipPacket.tcp.sport = ipPacket.tcp.dport
+                ipPacket.tcp.dport = tmp
+                ipPacket.tcp.flags = dpkt.tcp.TH_RST
+                ipPacket.tcp.sum = 0
+            #ACK Packet - open for SYN scanner
+            if 1 == 2:
+                tmp = ipPacket.tcp.sport
+                ipPacket.tcp.sport = ipPacket.tcp.dport
+                ipPacket.tcp.dport = tmp
+                #0x012 SYN-ACK flag
+                ipPacket.tcp.flags = 0x012
+                ipPacket.tcp.seq = 0
+                ipPacket.tcp.ack = ipPacket.tcp.seq + 1
+                ipPacket.tcp.sum = 0
+            
+            self.sendEthFrame(eth, ipPacket, destIP)
+            self.log.put("TCP-RST#" +"dstIP:" + destIP + ";srcIP:" 
+                         + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
+                         + ";dPort:" + str(ipPacket.tcp.sport) )
             pass
     
-    def sendEthPacket(self, eth, protoData, ip):
+    def sendEthFrame(self, eth, ipPacket, destIP):
         '''
-        sends eth packet
+        sends ethernet frame
         @eth - incoming eth frame
         @prtoData - data of ethernet frame
-        @ip - IP in printable format x.x.x.x
+        @destIP - ip destination address
         '''
-        eth.dst = self.getMACfromARPtable(ip)
+        tmp = ipPacket.src
+        ipPacket.src = ipPacket.dst
+        ipPacket.dst = tmp
+        ipPacket.ttl -= 1
+        #MUST be set to zero, to find out that should calculate new
+        ipPacket.sum = 0
+        eth.dst = self.getMACfromARPtable(destIP)
         eth.src = eth.dst
-        eth.data = protoData
+        eth.data = ipPacket
         self.snd.put(eth)
     
     def getMACfromARPtable(self, ip):
         '''
         return MAC of given IP.
-        If there is no match, then is send ARP reques for given IP
+        If there is no match, then is send ARP reques for given IP,
+        and system waits for answer
         @ip - IP address in x.x.x.x format
         '''
         
         arpTable = ds.globalData.arpTable
-        c = 1
-        while True:
+        c = 0
+        #6 seconds max - if ip-mac record not found, wait 2 s and send ARP request.
+        #Max 3 requests are sent.
+        while c < 59:
             if ip in arpTable:
                 return dumbnet.eth_aton(arpTable[ip])
-            if c:
-                c = 0
+            if c%20 == 0:
                 self.snd.put(Arp.ArpRequest(dumbnet.ip_aton(ip), self.ip, self.mac))
                 print "ARP request sent!"
             #if there is no ARP entry for given IP, then wait for it and try again
             sleep(0.1)
+        raise ValueError("ARP FAIL!")
             
             
             

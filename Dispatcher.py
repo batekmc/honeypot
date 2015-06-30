@@ -55,6 +55,7 @@ class Dispatcher(threading.Thread):
                 except ValueError:
                     print "fail! MAC: " + str(mac)
             #might add ipv6 support, or some other protocols using ethernet,
+            #for IpV6 mus be used different MAC addresses in Main - ipList + modify pcap filter
             #Just by using protocol number and then put it to the queue + modify sniffer filter.
                  
     
