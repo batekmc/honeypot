@@ -12,7 +12,8 @@ class FileParser:
     ip 1.1.1.1
     mac FF:FF:FF:FF:FF:FF
     icmp on
-    #comment
+    #comment - tcp has more args
+    tcp default block
     
     honeypot
     #second system
@@ -42,6 +43,10 @@ class FileParser:
                     retArr[hpot].mac = spl[1]
                 elif spl[0] == 'icmp':
                     retArr[hpot].icmp = spl[1]
+                elif spl[0] == 'tcp':
+                    if spl[1] == "default":
+                        retArr[hpot].tcp = spl[2]
+                    
                 
 
         return retArr

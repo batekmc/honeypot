@@ -46,6 +46,7 @@ class Dispatcher(threading.Thread):
             elif protocol == 8:
                 #split traffic based on MAC
                 mac = hf.ethernetAddr(packet[0:6])
+                #print hf.ethernetAddr(packet[6:12])
                 try:
                     index = self.macList.index(mac)
                     ethernetObject = dpkt.ethernet.Ethernet(packet)

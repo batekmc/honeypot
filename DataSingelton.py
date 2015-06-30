@@ -4,5 +4,7 @@ class DataSingelton:
         self.dev = dev
         self.confFile = confFile
         self.mac = hostMac
+        self.arpTable = {}
+        
 #act as singleton class        
 globalData = DataSingelton()

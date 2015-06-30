@@ -43,7 +43,7 @@ class Main:
         hpot = []
         for i in range(len(hpotData)):
             queueR.append(Queue.Queue())
-            hpot.append(hp.Honeypot(queueR[i]))
+            hpot.append(hp.Honeypot(queueR[i], hpotData[i]))
         
         for h in hpot:
             h.start()
