@@ -19,9 +19,11 @@ class Honeypot(threading.Thread):
         self.mac = ""
         self.ip=""
         self.icmp = False
-        #0 is block, 1 is close
-        self.tcp=0        
-        self.initData(data) 
+        #0 is block, 1 is close, 2 is open
+        self.tcp=0         
+        self.tcpOpenPorts=[]
+        
+        self.initData(data)
         
         #honeypots incoming packets
         self.packetQueue = queue
@@ -38,8 +40,16 @@ class Honeypot(threading.Thread):
         self.ip = data.ip
         if data.icmp == "on":
             self.icmp = True
-        if data.tcp == "close":
-            self.tcp = 1 
+        #if blocked, then will do nothing
+        if data.tcp[0] != "block":
+            self.tcp = 1
+        # are there some open ports?    
+        if data.tcp[0] == "open":
+            self.tcpOpenPorts = data.tcp[1:]
+            #code 2 is for open ports
+            self.tcp = 2
+            print self.tcpOpenPorts
+             
         
     def run(self):
            
@@ -62,25 +72,10 @@ class Honeypot(threading.Thread):
             self.sendEthFrame(eth, ipPacket, destIP)
             self.log.put("ICMP-ECHOREPLY#" +"dstIP:" + destIP + ";srcIP:" + self.ip )
             
-        #TCP
+        #TCP - if self.tcp is 0 - "filtered" in conf file
         elif ipPacket.p == dpkt.ip.IP_PROTO_TCP and self.tcp:
-            #0x014 - 
-            if ipPacket.tcp.flags == dpkt.tcp.TH_RST or ipPacket.tcp.flags == 0x014:
+            if not self.TCPdefault(ipPacket):
                 return
-            #RST Packet - closed
-            if 1 == 2:
-                ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
-                ipPacket.tcp.flags = dpkt.tcp.TH_RST
-                ipPacket.tcp.sum = 0
-            #ACK Packet - open for SYN scanner
-            if 1 == 2:
-                ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
-                #0x012 SYN-ACK flag
-                ipPacket.tcp.flags = 0x012
-                ipPacket.tcp.seq = 0
-                ipPacket.tcp.ack = ipPacket.tcp.seq + 1
-                ipPacket.tcp.sum = 0
-            
             self.sendEthFrame(eth, ipPacket, destIP)
             self.log.put("TCP-RST#" +"dstIP:" + destIP + ";srcIP:" 
                          + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
@@ -133,7 +128,37 @@ class Honeypot(threading.Thread):
             #if there is no ARP entry for given IP, then wait for it and try again
             sleep(0.1)
         raise ValueError("ARP FAIL!")
-            
+    
+    
+    def TCPdefault(self, ipPacket):
+        '''
+        Respond to incomnig tcp connections.
+        Responds are based on conf file.
+        @ipPacket - dpkt.ip object of the tcp type
+        '''
+        #0x014 - RST-ACK
+        if ipPacket.tcp.flags == dpkt.tcp.TH_RST or ipPacket.tcp.flags == 0x014:
+            return False
+        #RST Packet - closed
+        elif self.tcp == 1:
+            ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
+            ipPacket.tcp.flags = dpkt.tcp.TH_RST
+            ipPacket.tcp.sum = 0
+        #ACK Packet - open for SYN scanner
+        elif self.tcp == 2:
+            if str(ipPacket.tcp.dport) not in self.tcpOpenPorts:
+                return False
+            ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
+            #0x012 SYN-ACK flag
+            ipPacket.tcp.flags = 0x012
+            ipPacket.tcp.seq = 0
+            ipPacket.tcp.ack = ipPacket.tcp.seq + 1
+            ipPacket.tcp.sum = 0
+        else:
+            return False
+        
+        return True
+    
             
             
             

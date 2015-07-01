@@ -1,15 +1,21 @@
-#komentar nebo co
+#1
 honeypot
 ip 192.168.1.233
 mac 92:fe:25:ed:0e:33
 icmp on
 tcp default block
 
-#comment
 
 honeypot
-#comment
+#2
 ip 192.168.1.244
 mac 88:fe:25:ed:0e:22
 icmp on
 tcp default close
+
+honeypot
+#3
+ip 192.168.1.222
+mac 88:fe:25:ed:0e:44
+icmp on
+tcp default open 80 333

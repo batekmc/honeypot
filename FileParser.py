@@ -45,7 +45,7 @@ class FileParser:
                     retArr[hpot].icmp = spl[1]
                 elif spl[0] == 'tcp':
                     if spl[1] == "default":
-                        retArr[hpot].tcp = spl[2]
+                        retArr[hpot].tcp = spl[2:]
                     
                 
 
