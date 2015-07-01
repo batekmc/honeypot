@@ -6,6 +6,7 @@ import DataSingelton as ds
 from time import sleep
 import Arp
 import Log
+import DNS
 
 
 class Honeypot(threading.Thread):
@@ -62,22 +63,18 @@ class Honeypot(threading.Thread):
             self.log.put("ICMP-ECHOREPLY#" +"dstIP:" + destIP + ";srcIP:" + self.ip )
             
         #TCP
-        if ipPacket.p == dpkt.ip.IP_PROTO_TCP and self.tcp:
+        elif ipPacket.p == dpkt.ip.IP_PROTO_TCP and self.tcp:
             #0x014 - 
             if ipPacket.tcp.flags == dpkt.tcp.TH_RST or ipPacket.tcp.flags == 0x014:
                 return
             #RST Packet - closed
             if 1 == 2:
-                tmp = ipPacket.tcp.sport
-                ipPacket.tcp.sport = ipPacket.tcp.dport
-                ipPacket.tcp.dport = tmp
+                ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
                 ipPacket.tcp.flags = dpkt.tcp.TH_RST
                 ipPacket.tcp.sum = 0
             #ACK Packet - open for SYN scanner
             if 1 == 2:
-                tmp = ipPacket.tcp.sport
-                ipPacket.tcp.sport = ipPacket.tcp.dport
-                ipPacket.tcp.dport = tmp
+                ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
                 #0x012 SYN-ACK flag
                 ipPacket.tcp.flags = 0x012
                 ipPacket.tcp.seq = 0
@@ -88,7 +85,15 @@ class Honeypot(threading.Thread):
             self.log.put("TCP-RST#" +"dstIP:" + destIP + ";srcIP:" 
                          + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
                          + ";dPort:" + str(ipPacket.tcp.sport) )
-            pass
+        #UDP
+        elif ipPacket.p == dpkt.ip.IP_PROTO_UDP:
+            if ipPacket.udp.dport == 53:
+                dns = dpkt.dns.DNS(ipPacket.udp.data)
+                if DNS.dnsResponse(ipPacket):
+                    self.sendEthFrame(eth, ipPacket, destIP)
+                   
+                
+            
     
     def sendEthFrame(self, eth, ipPacket, destIP):
         '''
@@ -97,9 +102,8 @@ class Honeypot(threading.Thread):
         @prtoData - data of ethernet frame
         @destIP - ip destination address
         '''
-        tmp = ipPacket.src
-        ipPacket.src = ipPacket.dst
-        ipPacket.dst = tmp
+        ipPacket.len = len(ipPacket)
+        ipPacket.src, ipPacket.dst = ipPacket.dst, ipPacket.src
         ipPacket.ttl -= 1
         #MUST be set to zero, to find out that should calculate new
         ipPacket.sum = 0
