@@ -101,6 +101,7 @@ class Arp(threading.Thread):
     def updateArpCache(self):
         ''' lisOfAddresses is a list with addresses,
          which will be used for virtual hosts'''
+        return
         
         command = "sudo arp -s "
         mac = ds.globalData.mac

@@ -84,6 +84,9 @@ class Main:
             a.dev = sys.argv[1]
         
         a.mac = hf.getHwAddr(sys.argv[1])
+        a.ip = hf.getIPaddr(sys.argv[1])
+        #create ARP record for hosting machine
+        a.arpTable[a.ip] = a.mac
         return True       
     
     def updateIPTables(self, rules):

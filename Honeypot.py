@@ -8,6 +8,7 @@ import Arp
 import Log
 import DNS
 import DHCP
+import DataSingelton
 
 
 class Honeypot(threading.Thread):
@@ -117,21 +118,25 @@ class Honeypot(threading.Thread):
         If there is no match, then is send ARP reques for given IP,
         and system waits for answer
         @ip - IP address in x.x.x.x format
+        @return - binary mac
         '''
         
         arpTable = ds.globalData.arpTable
         c = 0
         #6 seconds max - if ip-mac record not found, wait 2 s and send ARP request.
         #Max 3 requests are sent.
-        while c < 59:
+        while c < 29:
             if ip in arpTable:
                 return dumbnet.eth_aton(arpTable[ip])
-            if c%20 == 0:
+            if c%10 == 0:
+                #send arp request, it will be proccessed by ARP thread
                 self.snd.put(Arp.ArpRequest(dumbnet.ip_aton(ip), self.ip, self.mac))
                 print "ARP request sent!"
             #if there is no ARP entry for given IP, then wait for it and try again
             sleep(0.1)
-        raise ValueError("ARP FAIL!")
+            c+=1
+        #//TODO default gw, if not on the same subnet
+        return dumbnet.eth_aton(DataSingelton.globalData.mac)
     
     
     def TCPdefault(self, ipPacket):
