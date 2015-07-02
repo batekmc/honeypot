@@ -7,6 +7,7 @@ from time import sleep
 import Arp
 import Log
 import DNS
+import DHCP
 
 
 class Honeypot(threading.Thread):
@@ -15,7 +16,7 @@ class Honeypot(threading.Thread):
         threading.Thread.__init__(self)
         
         self.daemon = True
-        
+                
         self.mac = ""
         self.ip=""
         self.icmp = False
@@ -52,6 +53,9 @@ class Honeypot(threading.Thread):
              
         
     def run(self):
+        
+        #TEST DHCP
+#         self.snd.put(DHCP.budildRequest(self.mac))
            
         while True:
             #if queue is empty, then it is blocked
@@ -155,6 +159,7 @@ class Honeypot(threading.Thread):
             ipPacket.tcp.ack = ipPacket.tcp.seq + 1
             ipPacket.tcp.sum = 0
         else:
+            #---HERE COMES YOUR SERVICE---
             return False
         
         return True

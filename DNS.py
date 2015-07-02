@@ -32,7 +32,7 @@ def dnsResponse(ipPacket):
     dns.rcode = dpkt.dns.DNS_RCODE_NOERR
     dns.qr = dpkt.dns.DNS_R 
     
-    # construct our fake answer RR
+    # construct answer RR
     arr = dpkt.dns.DNS.RR()
     arr.cls = dpkt.dns.DNS_IN
     arr.type = dpkt.dns.DNS_A
