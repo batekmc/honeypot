@@ -119,7 +119,7 @@ if __name__ == '__main__':
     try:
         m = Main()
     except :
-        #TODO - better cleaning
+        #//TODO - better cleaning - switch: do all cleaning before killing app:)
         os.popen("sudo killall python")
         os.popen("sudo iptables -F INPUT")
         raise      

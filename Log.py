@@ -27,6 +27,7 @@ class Log(threading.Thread):
         
         while True:
             line= self.queue.get(block=True, timeout=None)
+            #make a record with curren date and time
             self.file.write("[" + str(datetime.now()) + "]" + line + "\n")
             self.file.flush()
     

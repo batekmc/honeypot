@@ -7,8 +7,9 @@ from time import sleep
 import Arp
 import Log
 import DNS
-import DHCP
+# import DHCP
 import DataSingelton
+import IPANDRoutin
 
 
 class Honeypot(threading.Thread):
@@ -79,12 +80,11 @@ class Honeypot(threading.Thread):
             
         #TCP - if self.tcp is 0 - "filtered" in conf file
         elif ipPacket.p == dpkt.ip.IP_PROTO_TCP and self.tcp:
-            if not self.TCPdefault(ipPacket):
+            if not self.TCPdefault(ipPacket, destIP):
+                #if an action defined, or blocked, then block:)
                 return
             self.sendEthFrame(eth, ipPacket, destIP)
-            self.log.put("TCP-RST#" +"dstIP:" + destIP + ";srcIP:" 
-                         + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
-                         + ";dPort:" + str(ipPacket.tcp.sport) )
+
         #UDP
         elif ipPacket.p == dpkt.ip.IP_PROTO_UDP:
             if ipPacket.udp.dport == 53:
@@ -108,6 +108,9 @@ class Honeypot(threading.Thread):
         #MUST be set to zero, to find out that should calculate new
         ipPacket.sum = 0
         eth.dst = self.getMACfromARPtable(destIP)
+        if eth.dst == 0:
+            #if there is nowhere to send frame, stop
+            return
         eth.src = eth.dst
         eth.data = ipPacket
         self.snd.put(eth)
@@ -118,11 +121,15 @@ class Honeypot(threading.Thread):
         If there is no match, then is send ARP reques for given IP,
         and system waits for answer
         @ip - IP address in x.x.x.x format
-        @return - binary mac
+        @return - binary mac, 0 if not found
         '''
         
         arpTable = ds.globalData.arpTable
         c = 0
+        if not IPANDRoutin.isInSubnet(ip):
+            #if not in the same subnet, send to the default gw
+            ip = ds.globalData.gw.split("/")[0]#x.x.x.x/x format:)
+        
         #6 seconds max - if ip-mac record not found, wait 2 s and send ARP request.
         #Max 3 requests are sent.
         while c < 29:
@@ -135,15 +142,16 @@ class Honeypot(threading.Thread):
             #if there is no ARP entry for given IP, then wait for it and try again
             sleep(0.1)
             c+=1
-        #//TODO default gw, if not on the same subnet
-        return dumbnet.eth_aton(DataSingelton.globalData.mac)
+        #FAILED
+        return -1
     
     
-    def TCPdefault(self, ipPacket):
+    def TCPdefault(self, ipPacket, destIP):
         '''
         Respond to incomnig tcp connections.
         Responds are based on conf file.
         @ipPacket - dpkt.ip object of the tcp type
+        @destIP - for log
         '''
         #0x014 - RST-ACK
         if ipPacket.tcp.flags == dpkt.tcp.TH_RST or ipPacket.tcp.flags == 0x014:
@@ -153,6 +161,9 @@ class Honeypot(threading.Thread):
             ipPacket.tcp.sport, ipPacket.tcp.dport = ipPacket.tcp.dport, ipPacket.tcp.sport
             ipPacket.tcp.flags = dpkt.tcp.TH_RST
             ipPacket.tcp.sum = 0
+            self.log.put("TCP-RST#" +"dstIP:" + destIP + ";srcIP:" 
+                         + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
+                         + ";dPort:" + str(ipPacket.tcp.sport) )
         #ACK Packet - open for SYN scanner
         elif self.tcp == 2:
             if str(ipPacket.tcp.dport) not in self.tcpOpenPorts:
@@ -163,6 +174,9 @@ class Honeypot(threading.Thread):
             ipPacket.tcp.seq = 0
             ipPacket.tcp.ack = ipPacket.tcp.seq + 1
             ipPacket.tcp.sum = 0
+            self.log.put("TCP-SYN-ACK#" +"dstIP:" + destIP + ";srcIP:" 
+                         + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
+                         + ";dPort:" + str(ipPacket.tcp.sport) )
         else:
             #---HERE COMES YOUR SERVICE---
             return False

@@ -1,4 +1,5 @@
 import HpotData as hpd
+import DataSingelton as ds
 
 class FileParser:
     '''
@@ -39,6 +40,9 @@ class FileParser:
             else:
                 if spl[0] == 'ip':
                     retArr[hpot].ip = spl[1]
+                elif spl[0] == 'gw':
+                    #default gw for routing outside network
+                    ds.globalData.gw = spl[1]
                 elif spl[0] == 'mac':
                     retArr[hpot].mac = spl[1]
                 elif spl[0] == 'icmp':
