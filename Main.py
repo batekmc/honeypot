@@ -10,7 +10,10 @@ import HelpFunctions as hf
 import os
 from time import sleep
 
-
+#process pid
+pid = 0
+#this is only for deleting rules before program stops
+globIPtab =""
 
 class Main:
     def __init__(self):
@@ -20,13 +23,16 @@ class Main:
         #test input
         if not self.loadAndVerify():
             return
-        
+      
         #read conf file
         f = fp.FileParser("conf.txt")
         #get list of HpotData objects
         hpotData = f.readF()
         #get list of ip addresses only
         ipList, macList = self.getIPandMACLists(hpotData)
+        #for CLEANING
+        global globIPtab 
+        globIPtab = hf.ipTableScriptGeneratorDelete(ipList)
                 
         #run arp daemon
         arpQ = Queue.Queue()
@@ -35,7 +41,7 @@ class Main:
                 
         #update system firewall 
         ipTab=hf.ipTableScriptGenerator(ipList)
-        self.updateIPTables(ipTab)
+        updateIPTables(ipTab)
                         
         #queue for virtual system
         queueR = []
@@ -52,6 +58,9 @@ class Main:
         #start giving packets to queue
         self.sniff = sn.Sniffer(queueR, arpQ, ipList, macList, filter)
         self.sniff.start()
+        
+        #get process pid to kill program if future
+        pid = os.getpid()
         
         #stupid workaround to kill all threads...
         while True:
@@ -89,10 +98,6 @@ class Main:
         a.arpTable[a.ip] = a.mac
         return True       
     
-    def updateIPTables(self, rules):
-        for rule in rules:
-            ret = os.popen(rule)
-            print ret
             
     def generateFilter(self, ipList):
         '''"dst 192.168.1.222 or dst 192.168.1.1"'''
@@ -112,6 +117,11 @@ class Main:
     #TODO
     def stopThreads(self):
         self.sniff.onExit()
+        
+def updateIPTables(rules):
+    for rule in rules:
+        ret = os.popen(rule)
+        print ret
 
 
 if __name__ == '__main__':
@@ -119,7 +129,6 @@ if __name__ == '__main__':
     try:
         m = Main()
     except :
-        #//TODO - better cleaning - switch: do all cleaning before killing app:)
-        os.popen("sudo killall python")
-        os.popen("sudo iptables -F INPUT")
+        updateIPTables(globIPtab)
+        os.popen("sudo kill -9 " + str(pid))
         raise      

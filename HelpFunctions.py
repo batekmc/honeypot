@@ -35,3 +35,18 @@ def ipTableScriptGenerator(ipList):
     ret.append(last)
     
     return ret
+
+def ipTableScriptGeneratorDelete(ipList):
+    '''generates a file with rules for Linux netfilter/IPtables
+    rules necessary for running honeypot. It is because the kernet 
+    drops packets with destination address other than host PC.'''
+    ret=[]
+    start="iptables -D INPUT -d "
+    end=" -j ACCEPT"
+    last="iptables -D INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT"
+    
+    for addr in ipList:
+        ret.append(start + addr + end)
+    ret.append(last)
+    
+    return ret

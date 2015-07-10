@@ -3,8 +3,6 @@ from dpkt import udp
 from dpkt import ip
 from dpkt import ethernet
 import dumbnet
-import DataSingelton
-
 
 def budildRequest(sMac):
     '''

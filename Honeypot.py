@@ -14,6 +14,10 @@ import IPANDRoutin
 
 class Honeypot(threading.Thread):
     def __init__(self, queue, data):
+        '''
+        @queue - queue object
+        @data - HpotData bject
+        '''
         
         threading.Thread.__init__(self)
         
@@ -25,6 +29,8 @@ class Honeypot(threading.Thread):
         #0 is block, 1 is close, 2 is open
         self.tcp=0         
         self.tcpOpenPorts=[]
+        self.tcpServices = []
+        self.udpServices = []
         
         self.initData(data)
         
@@ -51,7 +57,8 @@ class Honeypot(threading.Thread):
             self.tcpOpenPorts = data.tcp[1:]
             #code 2 is for open ports
             self.tcp = 2
-            print self.tcpOpenPorts
+        self.udpServices =  data.udpServices
+        self.tcpServices = data.tcpServices
              
         
     def run(self):
@@ -87,10 +94,22 @@ class Honeypot(threading.Thread):
 
         #UDP
         elif ipPacket.p == dpkt.ip.IP_PROTO_UDP:
-            if ipPacket.udp.dport == 53:
-                dns = dpkt.dns.DNS(ipPacket.udp.data)
-                if DNS.dnsResponse(ipPacket):
-                    self.sendEthFrame(eth, ipPacket, destIP)
+
+            if self.udpServices is not None:
+                if str(ipPacket.udp.dport) in self.udpServices:
+                    
+                    #HERE COMES YOUR UDP SERVICE--------------------------------------
+                    #first chect if it is good port - like if ipPacket.udp.dport == 53
+                    # and then insert your code---------------------------------------
+                    
+                    if ipPacket.udp.dport == 53:
+                        dns = dpkt.dns.DNS(ipPacket.udp.data)
+                        if DNS.dnsResponse(ipPacket):
+                            self.log.put("UDP-DNS#" +"dstIP:" + destIP + ";srcIP:" 
+                             + self.ip + ";sPort:" + str(ipPacket.udp.dport) 
+                             + ";dPort:" + str(ipPacket.udp.sport) )
+                            self.sendEthFrame(eth, ipPacket, destIP)
+                        
                    
                 
             
@@ -138,12 +157,11 @@ class Honeypot(threading.Thread):
             if c%10 == 0:
                 #send arp request, it will be proccessed by ARP thread
                 self.snd.put(Arp.ArpRequest(dumbnet.ip_aton(ip), self.ip, self.mac))
-                print "ARP request sent!"
             #if there is no ARP entry for given IP, then wait for it and try again
             sleep(0.1)
             c+=1
         #FAILED
-        return -1
+        return 0
     
     
     def TCPdefault(self, ipPacket, destIP):
@@ -177,9 +195,13 @@ class Honeypot(threading.Thread):
             self.log.put("TCP-SYN-ACK#" +"dstIP:" + destIP + ";srcIP:" 
                          + self.ip + ";sPort:" + str(ipPacket.tcp.dport) 
                          + ";dPort:" + str(ipPacket.tcp.sport) )
-        else:
-            #---HERE COMES YOUR SERVICE---
-            return False
+            
+        if self.tcpServices is not None:            
+            if str(ipPacket.tcp.dport) in self.tcpServices:
+                #HERE COMES YOUR TCP SERVICE--------------------------------------
+                #first chect if it is good port - like if ipPacket.tcp.dport == 80:
+                # and then insert your code---------------------------------------
+                pass
         
         return True
     

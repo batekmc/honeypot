@@ -50,7 +50,13 @@ class FileParser:
                 elif spl[0] == 'tcp':
                     if spl[1] == "default":
                         retArr[hpot].tcp = spl[2:]
-                    
+                    elif spl[1] == 'service':
+                        retArr[hpot].tcpServices = spl[2:]
+                elif spl[0] == "udp":
+                    if spl[1] == "default":
+                        return
+                    elif spl[1] == "service":
+                        retArr[hpot].udpServices = spl[2:]
                 
 
         return retArr

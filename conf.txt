@@ -3,7 +3,7 @@ gw 192.168.1.1/24
 #1
 honeypot
 ip 192.168.1.233
-mac 92:fe:25:ed:0e:33
+mac 14:fe:b5:ed:0e:33
 icmp on
 tcp default block
 
@@ -11,13 +11,26 @@ tcp default block
 honeypot
 #2
 ip 192.168.1.244
-mac 88:fe:25:ed:0e:22
+mac 14:fe:b5:ed:0e:22
 icmp on
 tcp default close
+udp service 54
 
 honeypot
 #3
 ip 192.168.1.222
-mac 88:fe:25:ed:0e:44
+mac 14:fe:b5:ed:0e:44
 icmp on
 tcp default open 80 333
+udp service 53
+
+#ether dst FF:FF:FF:FF:FF:FF or dst 192.168.1.233 or dst 192.168.1.244 or dst 192.168.1.222
+#<open file 'iptables -D INPUT -d 192.168.1.233 -j ACCEPT', mode 'r' at 0x7fbf721c6ed0>
+#<open file 'iptables -D INPUT -d 192.168.1.244 -j ACCEPT', mode 'r' at 0x7fbf714fb150>
+#<open file 'iptables -D INPUT -d 192.168.1.222 -j ACCEPT', mode 'r' at 0x7fbf721c6ed0>
+#<open file 'iptables -D INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT', mode 'r' at 0x7fbf714fb150>
+
+#<open file 'iptables -A INPUT -d 192.168.1.233 -j ACCEPT', mode 'r' at 0x7fbf721c6ed0>
+#<open file 'iptables -A INPUT -d 192.168.1.244 -j ACCEPT', mode 'r' at 0x7fbf721c6f60>
+#<open file 'iptables -A INPUT -d 192.168.1.222 -j ACCEPT', mode 'r' at 0x7fbf721c6ed0>
+#<open file 'iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT', mode 'r' at 0x7fbf721c6f60>
